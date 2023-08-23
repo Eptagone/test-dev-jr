@@ -1,0 +1,138 @@
+-- Crear una nueva base de datos llamada "Practice04".
+
+USE master
+GO
+
+-- Crear la base de datos si no existe.
+IF NOT EXISTS (
+    SELECT [name]
+        FROM sys.databases
+        WHERE [name] = N'Practice04'
+)
+CREATE DATABASE Practice04
+GO
+
+-- Practice04
+-- MSSQL: 2022
+
+USE Practice04;
+
+IF NOT EXISTS (
+    SELECT [name]
+        FROM sys.tables
+        WHERE [name] = N'Oficinas'
+)
+-- Crear una nueva tabla llamada "Oficinas":
+CREATE TABLE Oficinas (
+    ID INT PRIMARY KEY,
+    Nombre VARCHAR(128) NOT NULL,
+    Direccion VARCHAR(128) NOT NULL,
+    Ciudad VARCHAR(128) NOT NULL,
+    Estado VARCHAR(128) NOT NULL,
+    Pais VARCHAR(128) NOT NULL,
+    Division INT NOT NULL,
+);
+
+-- Practice 05
+-- MSSQL: 2022
+
+USE Practice04;
+
+-- Si ya existe, borrarlo.
+IF EXISTS (
+SELECT *
+    FROM INFORMATION_SCHEMA.ROUTINES
+WHERE SPECIFIC_SCHEMA = N'dbo'
+    AND SPECIFIC_NAME = N'insertOrUpdate'
+    AND ROUTINE_TYPE = N'PROCEDURE'
+)
+DROP PROCEDURE dbo.insertOrUpdate
+GO
+
+-- Crear un nuevo procedimiento almacenado llamado "insertOrUpdate".
+CREATE PROCEDURE dbo.insertOrUpdate
+    @mode int
+AS
+BEGIN
+    -- Si el modo es 1, insertar un nuevo registro.
+    IF @mode = 1
+    BEGIN
+        INSERT INTO Oficinas (ID, Nombre, Direccion, Ciudad, Estado, Pais, Division)
+        VALUES (1, 'The Office', 'Direccion 1', 'Monterrey', 'Nuevo Leon', 'Mexico', 1)
+    END
+    -- Si el modo es 0, actualizar el campo direccion del registro con ID = 1.
+    ELSE IF @mode = 0
+    BEGIN
+        UPDATE Oficinas
+        SET Direccion = 'Direccion 2'
+        WHERE ID = 1
+    END
+END
+
+-- Borrar todos los registros.
+TRUNCATE TABLE Oficinas;
+
+-- Ver registros actuales.
+SELECT * FROM Oficinas;
+
+-- Insertar un nuevo registro.
+EXEC dbo.insertOrUpdate 1;
+
+-- Ver registros actuales.
+SELECT * FROM Oficinas;
+
+-- Actualizar un registro existente.
+EXEC dbo.insertOrUpdate 0;
+
+-- Ver registros finales.
+SELECT * FROM Oficinas;
+
+-- Practice06
+-- MSSQL: 2022
+
+USE Practice04;
+
+-- Borra la secuencia "IDOFICINA_SEC" si ya existe.
+IF EXISTS (
+    SELECT *
+        FROM sys.sequences
+        WHERE [name] = N'IDOFICINA_SEC'
+)
+DROP SEQUENCE IDOFICINA_SEC
+GO
+-- Crear una nueva secuencia llamada "IDOFICINA_SEC".
+CREATE SEQUENCE IDOFICINA_SEC
+    START WITH 100
+    INCREMENT BY 1;
+
+-- Crear un nuevo trigger llamado "OficinaInsertTrigger".
+GO
+CREATE OR ALTER TRIGGER OficinaInsertTrigger
+    ON Oficinas
+    INSTEAD OF INSERT
+AS
+BEGIN
+    -- Insertar el valor de la secuencia IDOFICINA_SEC en el campo ID.
+    INSERT INTO Oficinas
+        (ID, Nombre, Direccion, Ciudad, Estado, Pais, Division)
+    SELECT NEXT VALUE FOR IDOFICINA_SEC, Nombre, Direccion, Ciudad, Estado, Pais, Division
+    FROM inserted;
+END
+GO
+
+-- Borrar todos los registros.
+TRUNCATE TABLE Oficinas;
+
+-- Ver registros actuales.
+SELECT * FROM Oficinas;
+
+-- Insertar un nuevo registro.
+INSERT INTO Oficinas
+    (Nombre, Direccion, Ciudad, Estado, Pais, Division)
+VALUES
+    ('The Office', 'Direccion 1', 'Monterrey', 'Nuevo Leon', 'Mexico', 1),
+    ('The Office 2', 'Direccion 1', 'Guadalupe', 'Nuevo Leon', 'Mexico', 1),
+    ('The Office 3', 'Direccion 1', 'San Pedro Garza Garcia', 'Nuevo Leon', 'Mexico', 1);
+
+-- Ver registros actuales.
+SELECT * FROM Oficinas;
